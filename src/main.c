@@ -29,12 +29,30 @@ typedef struct {
 #define STAPEL_INSTRUCTION_JUMP_EQUALS              0x0B 
 #define STAPEL_INSTRUCTION_JUMP_MORE                0x0C 
 #define STAPEL_INSTRUCTION_JUMP_LESS                0x0D 
+#define STAPEL_INSTRUCTION_RET                      0x0E
+#define STAPEL_INSTRUCTION_POP                      0x0F
 
 void* central_memory;
 void* stack;
+void* call_stack;
 
 uint64_t instruction_pointer = 0;
 uint64_t stack_pointer = 0;
+uint64_t call_stack_pointer = 0;
+
+void call_stack_push(uint64_t value)
+{
+    ((uint64_t*)call_stack_pointer)[0] = value;
+    call_stack_pointer += sizeof(uint64_t);
+}
+
+uint64_t call_stack_pop()
+{
+    call_stack_pointer -= sizeof(uint64_t);
+    uint64_t oldval = ((uint64_t*)call_stack_pointer)[0];
+    ((uint64_t*)call_stack_pointer)[0] = 0;
+    return oldval;
+}
 
 void stack_push(uint64_t value)
 {
@@ -84,7 +102,7 @@ void handle_next_instruction()
     {
         add_instruction_pointer_uint8();
         uint64_t address_to_get = grab_next_argument();
-        uint64_t value_at_address = ((uint64_t*)address_to_get)[0];
+        uint64_t value_at_address = ((uint64_t*)( address_to_get + central_memory ))[0];
         add_instruction_pointer_uint64();
         #ifdef DEBUG
             printf("DEBUG: reading value of 0x%x at 0x%x \n",value_at_address,address_to_get);
@@ -105,12 +123,23 @@ void handle_next_instruction()
     {
         printf("----START DEBUGGING----\n");
         printf("address: 0x%x instruction: 0x%x \n",instruction_pointer,instruction);
-        printf("stack:\n");
+        printf("\nstack:\n");
         uint64_t internalstack = (uint64_t) stack;
         while(1)
         {
             printf("- address: 0x%x value:%x \n",internalstack,((uint64_t*)internalstack)[0]);
             if(internalstack==stack_pointer)
+            {
+                break;
+            }
+            internalstack += sizeof(uint64_t);
+        }
+        printf("\ncall stack:\n");
+        internalstack = (uint64_t) call_stack;
+        while(1)
+        {
+            printf("- address: 0x%x value:%x \n",internalstack,((uint64_t*)internalstack)[0]);
+            if(internalstack==call_stack_pointer)
             {
                 break;
             }
@@ -194,6 +223,7 @@ int main(int argc , char** argv)
     #endif 
     central_memory = malloc(filesize);
     stack = malloc(STAPEL_LIMITATION_STACK*sizeof(uint64_t));
+    call_stack = malloc(STAPEL_LIMITATION_STACK*sizeof(uint64_t));
 
     fseek(targetfile,0,SEEK_SET);
     fread(central_memory,filesize,1,targetfile);
@@ -231,9 +261,12 @@ int main(int argc , char** argv)
     }
 
     instruction_pointer = 0;
+    stack_pointer = 0;
+    call_stack_pointer = 0;
 
-    instruction_pointer = (uint64_t) ( central_memory + sizeof(StapelFileHeader) );
-    stack_pointer = (uint64_t) stack;
+    instruction_pointer     = (uint64_t) ( central_memory + sizeof(StapelFileHeader) );
+    stack_pointer           = (uint64_t) stack;
+    call_stack_pointer      = (uint64_t) call_stack;
 
     while(1)
     {

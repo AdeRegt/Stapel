@@ -67,3 +67,7 @@ db 2 ; 64 bit
     db 0xD
     dq %1
 %endmacro 
+
+%macro return 0
+    db 0xE
+%endmacro 
