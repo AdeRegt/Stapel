@@ -31,6 +31,7 @@ typedef struct {
 #define STAPEL_INSTRUCTION_JUMP_LESS                0x0D 
 #define STAPEL_INSTRUCTION_RET                      0x0E
 #define STAPEL_INSTRUCTION_POP                      0x0F
+#define STAPEL_INSTRUCTION_PUSH_RAW_ADDR            0x10
 
 void* central_memory;
 void* stack;
@@ -92,7 +93,7 @@ void handle_next_instruction()
 {
     uint8_t instruction = grab_next_instruction();
     #ifdef DEBUG
-    printf("DEBUG: address: 0x%x instruction: 0x%x \n",instruction_pointer,instruction);
+    printf("DEBUG: address: 0x%lx instruction: 0x%x \n",instruction_pointer,instruction);
     #endif 
     if(instruction==STAPEL_INSTRUCTION_EXIT)
     {
@@ -105,7 +106,7 @@ void handle_next_instruction()
         uint64_t value_at_address = ((uint64_t*)( address_to_get + central_memory ))[0];
         add_instruction_pointer_uint64();
         #ifdef DEBUG
-            printf("DEBUG: reading value of 0x%x at 0x%x \n",value_at_address,address_to_get);
+            printf("DEBUG: reading value of 0x%lx at 0x%lx \n",value_at_address,address_to_get);
         #endif 
         stack_push(value_at_address);
     }
@@ -115,19 +116,19 @@ void handle_next_instruction()
         uint64_t value_at_address = grab_next_argument();
         add_instruction_pointer_uint64();
         #ifdef DEBUG
-            printf("DEBUG: reading value of 0x%x \n",value_at_address);
+            printf("DEBUG: reading value of 0x%lx \n",value_at_address);
         #endif 
         stack_push(value_at_address);
     }
     else if(instruction==STAPEL_INSTRUCTION_DEBUG)
     {
         printf("----START DEBUGGING----\n");
-        printf("address: 0x%x instruction: 0x%x \n",instruction_pointer,instruction);
+        printf("address: 0x%lx instruction: 0x%x \n",instruction_pointer,instruction);
         printf("\nstack:\n");
         uint64_t internalstack = (uint64_t) stack;
         while(1)
         {
-            printf("- address: 0x%x value:%x \n",internalstack,((uint64_t*)internalstack)[0]);
+            printf("- address: 0x%lx value:%lx \n",internalstack,((uint64_t*)internalstack)[0]);
             if(internalstack==stack_pointer)
             {
                 break;
@@ -138,7 +139,7 @@ void handle_next_instruction()
         internalstack = (uint64_t) call_stack;
         while(1)
         {
-            printf("- address: 0x%x value:%x \n",internalstack,((uint64_t*)internalstack)[0]);
+            printf("- address: 0x%lx value:%lx \n",internalstack,((uint64_t*)internalstack)[0]);
             if(internalstack==call_stack_pointer)
             {
                 break;
@@ -181,7 +182,7 @@ void handle_next_instruction()
         add_instruction_pointer_uint8();
         uint64_t value_at_address = grab_next_argument();
         #ifdef DEBUG
-            printf("DEBUG: calling 0x%x from 0x%x \n",value_at_address,instruction_pointer);
+            printf("DEBUG: calling 0x%lx from 0x%lx \n",value_at_address,instruction_pointer);
         #endif 
         add_instruction_pointer_uint64();
         call_stack_push(instruction_pointer);
@@ -192,7 +193,7 @@ void handle_next_instruction()
         add_instruction_pointer_uint8();
         uint64_t value_at_address = grab_next_argument();
         #ifdef DEBUG
-            printf("DEBUG: jumping 0x%x from 0x%x \n",value_at_address,instruction_pointer);
+            printf("DEBUG: jumping 0x%lx from 0x%lx \n",value_at_address,instruction_pointer);
         #endif 
         add_instruction_pointer_uint64();
         instruction_pointer = ( value_at_address + (uint64_t)central_memory );
@@ -207,11 +208,21 @@ void handle_next_instruction()
         uint64_t asmEBX = stack_pop();
         uint64_t asmEAX = stack_pop();
         #ifdef DEBUG
-            printf("DEBUG: SYSTEMCALL: eax:0x%x ebx:0x%x ecx:0x%x edx:0x%x esi:0x%x edi:0x%x \n",asmEAX,asmEBX,asmECX,asmEDX,asmESI,asmEDI);
+            printf("DEBUG: SYSTEMCALL: eax:0x%lx ebx:0x%lx ecx:0x%lx edx:0x%lx esi:0x%lx edi:0x%lx \n",asmEAX,asmEBX,asmECX,asmEDX,asmESI,asmEDI);
         #endif 
         void* res = 0;
         __asm__ __volatile__( "int $0x80" : "=a"(res) : "a"(asmEAX) , "b" (asmEBX), "c" (asmECX), "d" (asmEDX), "S" (asmESI), "D" (asmEDI) );
         stack_push((uint64_t)res);
+    }
+    else if(instruction==STAPEL_INSTRUCTION_PUSH_RAW_ADDR)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t value_at_address =  grab_next_argument();
+        add_instruction_pointer_uint64();
+        #ifdef DEBUG
+            printf("DEBUG: reading value of 0x%lx \n",value_at_address);
+        #endif 
+        stack_push(value_at_address + (uint64_t)central_memory);
     }
     else
     {
@@ -256,7 +267,7 @@ int main(int argc , char** argv)
     fseek(targetfile,0,SEEK_END);
     uint64_t filesize = ftell(targetfile);
     #ifdef DEBUG
-    printf("DEBUG: The filesize of \"%s\" is %d bytes \n",argv[1],filesize);
+    printf("DEBUG: The filesize of \"%s\" is %ld bytes \n",argv[1],filesize);
     #endif 
     central_memory = malloc(filesize);
     stack = malloc(STAPEL_LIMITATION_STACK*sizeof(uint64_t));
@@ -272,10 +283,10 @@ int main(int argc , char** argv)
 
     StapelFileHeader* sth = (StapelFileHeader*)central_memory;
     #ifdef DEBUG
-    printf("DEBUG: beginning of central memory: 0x%x \n",sth);
-    printf("DEBUG: grote van stapelfileheader: %d \n",sizeof(StapelFileHeader));
+    printf("DEBUG: beginning of central memory: 0x%lx \n",(uint64_t)sth);
+    printf("DEBUG: grote van stapelfileheader: %ld \n",sizeof(StapelFileHeader));
     printf("DEBUG: signature: %c %c \n",sth->signature[0],sth->signature[1]);
-    printf("DEBUG: version: 0x%x \n",sth->version);
+    printf("DEBUG: version: 0x%lx \n",sth->version);
     printf("DEBUG: architecture: 0x%x \n",sth->architecture);
     #endif 
 
