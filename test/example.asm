@@ -1,11 +1,12 @@
 %include "lib/languagedefinition.inc" 
-push_value_from variable_a
-push_value_from variable_b
-add 
-debug
+push_value_with 1
+push_value_with 1
+push_value_with 0 
+push_value_with 0
+push_value_with 0
+push_value_with 0
+int
 exit
 
 variable_a:
-dq 1
-variable_b:
-dq 10
+db "Hello world!"

@@ -14,7 +14,7 @@ db 2 ; 64 bit
     dq %1
 %endmacro 
 
-%macro push_value 1
+%macro push_value_with 1
     db 2
     dq %1
 %endmacro 

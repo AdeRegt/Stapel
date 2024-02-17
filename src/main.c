@@ -176,6 +176,43 @@ void handle_next_instruction()
         stack_push(valA/valB);
         add_instruction_pointer_uint8();
     }
+    else if(instruction==STAPEL_INSTRUCTION_CALL)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t value_at_address = grab_next_argument();
+        #ifdef DEBUG
+            printf("DEBUG: calling 0x%x from 0x%x \n",value_at_address,instruction_pointer);
+        #endif 
+        add_instruction_pointer_uint64();
+        call_stack_push(instruction_pointer);
+        instruction_pointer = ( value_at_address + (uint64_t)central_memory );
+    }
+    else if(instruction==STAPEL_INSTRUCTION_JUMP)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t value_at_address = grab_next_argument();
+        #ifdef DEBUG
+            printf("DEBUG: jumping 0x%x from 0x%x \n",value_at_address,instruction_pointer);
+        #endif 
+        add_instruction_pointer_uint64();
+        instruction_pointer = ( value_at_address + (uint64_t)central_memory );
+    }
+    else if(instruction==STAPEL_INSTRUCTION_INT)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t asmEDI = stack_pop();
+        uint64_t asmESI = stack_pop();
+        uint64_t asmEDX = stack_pop();
+        uint64_t asmECX = stack_pop();
+        uint64_t asmEBX = stack_pop();
+        uint64_t asmEAX = stack_pop();
+        #ifdef DEBUG
+            printf("DEBUG: SYSTEMCALL: eax:0x%x ebx:0x%x ecx:0x%x edx:0x%x esi:0x%x edi:0x%x \n",asmEAX,asmEBX,asmECX,asmEDX,asmESI,asmEDI);
+        #endif 
+        void* res = 0;
+        __asm__ __volatile__( "int $0x80" : "=a"(res) : "a"(asmEAX) , "b" (asmEBX), "c" (asmECX), "d" (asmEDX), "S" (asmESI), "D" (asmEDI) );
+        stack_push((uint64_t)res);
+    }
     else
     {
         printf("FATAL: Invalid instruction\n");
