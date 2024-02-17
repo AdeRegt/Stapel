@@ -214,6 +214,70 @@ void handle_next_instruction()
         __asm__ __volatile__( "int $0x80" : "=a"(res) : "a"(asmEAX) , "b" (asmEBX), "c" (asmECX), "d" (asmEDX), "S" (asmESI), "D" (asmEDI) );
         stack_push((uint64_t)res);
     }
+    else if(instruction==STAPEL_INSTRUCTION_JUMP_EQUALS)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t value_at_address =  grab_next_argument();
+        add_instruction_pointer_uint64();
+        uint64_t valA = stack_pop();
+        uint64_t valB = stack_pop();
+        #ifdef DEBUG
+            printf("DEBUG: conditional jump A(0x%lx)==B(0x%lx) if true, jump to 0x%lx  \n",valA,valB,value_at_address);
+        #endif 
+        if(valA==valB)
+        {
+            instruction_pointer = value_at_address;
+        }
+    }
+    else if(instruction==STAPEL_INSTRUCTION_JUMP_MORE)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t value_at_address =  grab_next_argument();
+        add_instruction_pointer_uint64();
+        uint64_t valA = stack_pop();
+        uint64_t valB = stack_pop();
+        #ifdef DEBUG
+            printf("DEBUG: conditional jump A(0x%lx)>B(0x%lx) if true, jump to 0x%lx  \n",valA,valB,value_at_address);
+        #endif 
+        if(valA>valB)
+        {
+            instruction_pointer = value_at_address;
+        }
+    }
+    else if(instruction==STAPEL_INSTRUCTION_JUMP_LESS)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t value_at_address =  grab_next_argument();
+        add_instruction_pointer_uint64();
+        uint64_t valA = stack_pop();
+        uint64_t valB = stack_pop();
+        #ifdef DEBUG
+            printf("DEBUG: conditional jump A(0x%lx)<B(0x%lx) if true, jump to 0x%lx  \n",valA,valB,value_at_address);
+        #endif 
+        if(valA<valB)
+        {
+            instruction_pointer = value_at_address;
+        }
+    }
+    else if(instruction==STAPEL_INSTRUCTION_RET)
+    {
+        add_instruction_pointer_uint8();
+        #ifdef DEBUG
+            printf("DEBUG: return statement  \n");
+        #endif 
+        instruction_pointer = call_stack_pop();
+    }
+    else if(instruction==STAPEL_INSTRUCTION_POP)
+    {
+        add_instruction_pointer_uint8();
+        uint64_t value_at_address =  grab_next_argument() + (uint64_t) central_memory;
+        add_instruction_pointer_uint64();
+        uint64_t val = stack_pop();
+        #ifdef DEBUG
+            printf("DEBUG: popping the value of 0x%lx from the stack and put it at 0x%lx \n",val,value_at_address);
+        #endif 
+        ((uint64_t*)value_at_address)[0] = val;
+    }
     else if(instruction==STAPEL_INSTRUCTION_PUSH_RAW_ADDR)
     {
         add_instruction_pointer_uint8();
