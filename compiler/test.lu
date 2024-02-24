@@ -1,5 +1,5 @@
 push value 1
-push value_at 2
-
-example "hello world" 
+push value 2
 add 
+debug
+exit

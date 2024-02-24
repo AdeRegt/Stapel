@@ -198,6 +198,30 @@ int main(int argc,char** argv)
         }
     }
 
+    if(buffer!=NULL&&strlen(buffer))
+    {
+        #ifdef DEBUG
+        printf("DEBUG: parsed line \"%s\" \n",buffer);
+        #endif 
+        SourceFileLine* tg = (SourceFileLine*) calloc(1,sizeof(SourceFileLine));
+        tg->content = buffer;
+        tg->filename = inputfile;
+        tg->line = linenumber;
+        tg->next = NULL;
+        tg->tokens = NULL;
+        if(sourcefile_begin==NULL)
+        {
+            sourcefile_begin = tg;
+        }
+        if(sourcefile_now!=NULL)
+        {
+            sourcefile_now->next = tg;
+        }
+        sourcefile_now = tg;
+        buffer = NULL;
+        linenumber += 1;
+    }
+
     fclose(file);
 
     // 
@@ -347,6 +371,16 @@ int main(int argc,char** argv)
     #endif 
 
     //
+    // setup header
+    // signature
+    add_compiled_tree_value(0x53, sizeof(uint8_t) ,NULL, 0);
+    add_compiled_tree_value(0x54, sizeof(uint8_t) ,NULL, 0);
+    // version
+    add_compiled_tree_value(1, sizeof(uint64_t) ,NULL, 0);
+    // architecture
+    add_compiled_tree_value(2, sizeof(uint8_t) ,NULL, 0);
+
+    //
     // check for grammar mistakes
     loopnow = sourcefile_begin;
     while(1)
@@ -393,7 +427,7 @@ int main(int argc,char** argv)
                     }
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE,sizeof(uint8_t),NULL,0);
-                    add_compiled_tree_value(0,sizeof(uint64_t),NULL,1);
+                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,1);
                 }
                 else
                 {
@@ -482,6 +516,24 @@ int main(int argc,char** argv)
         }
         loopnow = loopnow->next;
     }
+
+    //
+    // Do we need to link something?
+
+    //
+    // Build file
+    FILE* targetfile = fopen(outputfile,"w");
+    CompiledTreeValue* looplater = targetfile_begin;
+    while(1)
+    {
+        fwrite((void*)&looplater->value,1,looplater->size,targetfile);
+        if(looplater->next==NULL)
+        {
+            break;
+        }
+        looplater = looplater->next;
+    }
+    fclose(targetfile);
 
     exit(EXIT_SUCCESS);
 }
