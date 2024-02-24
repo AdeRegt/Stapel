@@ -21,6 +21,28 @@ typedef struct{
 SourceFileLine* sourcefile_begin = NULL;
 SourceFileLine* sourcefile_now = NULL;
 
+void grammar_error_in_token(SourceFileLineToken* token,char* message)
+{
+    printf("FATAL: An error occured while compiling:\n");
+    printf("       File   :   %s\n",token->master->filename);
+    printf("       LineNo :   %d\n",token->master->line);
+    printf("       Line   :   %s\n",token->master->content);
+    printf("       TokenAt:   %d\n",token->token_id);
+    printf("       Token  :   %s\n",token->token);
+    printf("       Message:   %s\n",message);
+    exit(EXIT_FAILURE);
+}
+
+void grammar_error_in_line(SourceFileLine* token,char* message)
+{
+    printf("FATAL: An error occured while compiling:\n");
+    printf("       File   :   %s\n",token->filename);
+    printf("       LineNo :   %d\n",token->line);
+    printf("       Line   :   %s\n",token->content);
+    printf("       Message:   %s\n",message);
+    exit(EXIT_FAILURE);
+}
+
 int main(int argc,char** argv)
 {
     
@@ -222,6 +244,10 @@ int main(int argc,char** argv)
         }
         if(buffer!=NULL&&strlen(buffer)>0)
         {
+            if(is_string==1)
+            {
+                grammar_error_in_line(loopnow,"String is not closed!");
+            }
             SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
             tok->master = loopnow;
             tok->token = buffer;
