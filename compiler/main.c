@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../src/include/general.h"
 
 typedef struct{
     char* filename;
@@ -174,97 +175,105 @@ int main(int argc,char** argv)
         int is_string = 0;
         SourceFileLineToken *tok_last = NULL;
         int tokencount = 1;
-        for(int i = 0 ; i < strlen(loopnow->content); i++)
+        if(strlen(loopnow->content))
         {
-            char t = ((char*)loopnow->content)[i];
-            if(buffer==NULL)
+            for(int i = 0 ; i < strlen(loopnow->content); i++)
             {
-                buffer = calloc(1,0);
-            }
-            bufferbuffer = buffer;
-            buffer = calloc(1,strlen(bufferbuffer) + 1);
-            memcpy(buffer,bufferbuffer,strlen(bufferbuffer));
-            free(bufferbuffer);
-            ((char*)buffer)[strlen(buffer)] = 0;
-            // ignore tabs
-            if(t=='\t')
-            {
-                continue;
-            }
-            // spaces could be a token splitter
-            if(t==' '&&buffer!=NULL&&strlen(buffer)==0&&is_string==0)
-            {
-                continue;
-            }
-            else if(t==' '&&buffer!=NULL&&strlen(buffer)>0&&is_string==0)
-            {
-                goto gohere;
-            }
-            // "" could be a token splitter
-            else if(t=='"')
-            {
-                if(is_string)
+                char t = ((char*)loopnow->content)[i];
+                if(buffer==NULL)
                 {
-                    is_string = 0;
+                    buffer = calloc(1,0);
                 }
-                else
-                {
-                    is_string = 1;
-                }
-                if(is_string==1&&strlen(buffer)==0)
+                bufferbuffer = buffer;
+                buffer = calloc(1,strlen(bufferbuffer) + 1);
+                memcpy(buffer,bufferbuffer,strlen(bufferbuffer));
+                free(bufferbuffer);
+                ((char*)buffer)[strlen(buffer)] = 0;
+                // ignore tabs
+                if(t=='\t')
                 {
                     continue;
                 }
-                goto gohere;
-            }
-            else 
-            {
-                ((char*)buffer)[strlen(buffer)] = t;
-            }
-            continue;
-            gohere:
-            SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
-            tok->master = loopnow;
-            tok->token = buffer;
-            tok->token_id = tokencount++;
-            if(loopnow->tokens==NULL)
-            {
-                loopnow->tokens = tok;
-            }
-            else
-            {
-                tok_last->next = tok;
-            }
-            tok_last = tok;
-            #ifdef DEBUG
-            printf("DEBUG: parsed token \"%s\" \n",buffer);
-            #endif 
-            buffer = NULL;
+                // spaces could be a token splitter
+                if(t==' '&&buffer!=NULL&&strlen(buffer)==0&&is_string==0)
+                {
+                    continue;
+                }
+                else if(t==' '&&buffer!=NULL&&strlen(buffer)>0&&is_string==0)
+                {
+                    goto gohere;
+                }
+                // "" could be a token splitter
+                else if(t=='"')
+                {
+                    if(is_string)
+                    {
+                        is_string = 0;
+                    }
+                    else
+                    {
+                        is_string = 1;
+                    }
+                    if(is_string==1&&strlen(buffer)==0)
+                    {
+                        continue;
+                    }
+                    goto gohere;
+                }
+                else 
+                {
+                    ((char*)buffer)[strlen(buffer)] = t;
+                }
+                continue;
+                gohere:
+                SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
+                tok->master = loopnow;
+                tok->token = buffer;
+                tok->token_id = tokencount++;
+                if(loopnow->tokens==NULL)
+                {
+                    loopnow->tokens = tok;
+                }
+                else
+                {
+                    tok_last->next = tok;
+                }
+                tok_last = tok;
+                #ifdef DEBUG
+                printf("DEBUG: parsed token \"%s\" \n",buffer);
+                #endif 
+                buffer = NULL;
 
+            }
+            if(buffer!=NULL&&strlen(buffer)>0)
+            {
+                if(is_string==1)
+                {
+                    grammar_error_in_line(loopnow,"String is not closed!");
+                }
+                SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
+                tok->master = loopnow;
+                tok->token = buffer;
+                tok->token_id = tokencount++;
+                if(loopnow->tokens==NULL)
+                {
+                    loopnow->tokens = tok;
+                }
+                else
+                {
+                    tok_last->next = tok;
+                }
+                tok_last = tok;
+                #ifdef DEBUG
+                printf("DEBUG: parsed token \"%s\" \n",buffer);
+                #endif 
+                buffer = NULL;
+            }
+            loopnow->tokencount = tokencount-1;
         }
-        if(buffer!=NULL&&strlen(buffer)>0)
+        else
         {
-            if(is_string==1)
-            {
-                grammar_error_in_line(loopnow,"String is not closed!");
-            }
-            SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
-            tok->master = loopnow;
-            tok->token = buffer;
-            tok->token_id = tokencount++;
-            if(loopnow->tokens==NULL)
-            {
-                loopnow->tokens = tok;
-            }
-            else
-            {
-                tok_last->next = tok;
-            }
-            tok_last = tok;
-            #ifdef DEBUG
-            printf("DEBUG: parsed token \"%s\" \n",buffer);
-            #endif 
-            buffer = NULL;
+            loopnow->tokencount = 0;
         }
         if(loopnow->next==NULL)
         {
@@ -280,15 +289,18 @@ int main(int argc,char** argv)
     {
         printf("DEBUG:\n\tfile\t\t:\t%s\n\tline\t\t:\t%d\n\tcode\t\t:\t\"%s\"\n\ttoken count\t:\t%d\n",loopnow->filename,loopnow->line,loopnow->content,loopnow->tokencount);
         printf("\ttokens\t\t:\n");
-        SourceFileLineToken *tok = loopnow->tokens;
-        while(1)
+        if(loopnow->tokencount)
         {
-            printf("\t\t%i\t:\t%s\n",tok->token_id,tok->token);
-            if(tok->next==NULL)
+            SourceFileLineToken *tok = loopnow->tokens;
+            while(1)
             {
-                break;
+                printf("\t\t%i\t:\t%s\n",tok->token_id,tok->token);
+                if(tok->next==NULL)
+                {
+                    break;
+                }
+                tok = tok->next;
             }
-            tok = tok->next;
         }
         printf("\n");
         if(loopnow->next==NULL)
@@ -298,6 +310,54 @@ int main(int argc,char** argv)
         loopnow = loopnow->next;
     }
     #endif 
+
+    //
+    // check for grammar mistakes
+    loopnow = sourcefile_begin;
+    while(1)
+    {
+        if(loopnow->tokencount>0)
+        {
+            SourceFileLineToken *tok = loopnow->tokens;
+            if(strcmp(tok->token,"exit")==0)
+            {}
+            else if(strcmp(tok->token,"push")==0)
+            {}
+            else if(strcmp(tok->token,"debug")==0)
+            {}
+            else if(strcmp(tok->token,"add")==0)
+            {}
+            else if(strcmp(tok->token,"sub")==0)
+            {}
+            else if(strcmp(tok->token,"mul")==0)
+            {}
+            else if(strcmp(tok->token,"div")==0)
+            {}
+            else if(strcmp(tok->token,"call")==0)
+            {}
+            else if(strcmp(tok->token,"jump")==0)
+            {}
+            else if(strcmp(tok->token,"int")==0)
+            {}
+            else if(strcmp(tok->token,"ret")==0)
+            {}
+            else if(strcmp(tok->token,"pop")==0)
+            {}
+            else
+            {
+                grammar_error_in_token(tok,"Cannot understand token");
+            }
+            if(tok->next!=NULL)
+            {
+                grammar_error_in_token(tok,"Garbage after this token");
+            }
+        }
+        if(loopnow->next==NULL)
+        {
+            break;
+        }
+        loopnow = loopnow->next;
+    }
 
     exit(EXIT_SUCCESS);
 }
