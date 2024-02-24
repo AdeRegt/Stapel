@@ -5,9 +5,18 @@
 typedef struct{
     char* filename;
     int line;
+    int tokencount;
     char* content;
+    void *tokens;
     void *next;
 } SourceFileLine;
+
+typedef struct{
+    char* token;
+    SourceFileLine *master;
+    int token_id;
+    void *next;
+} SourceFileLineToken;
 
 SourceFileLine* sourcefile_begin = NULL;
 SourceFileLine* sourcefile_now = NULL;
@@ -82,7 +91,7 @@ int main(int argc,char** argv)
 
     
     //
-    // converts the files into stuff
+    // converts the files into lines
     char *buffer = NULL;
     char *bufferbuffer = NULL;
     int linenumber = 1;
@@ -112,6 +121,7 @@ int main(int argc,char** argv)
             tg->filename = inputfile;
             tg->line = linenumber;
             tg->next = NULL;
+            tg->tokens = NULL;
             if(sourcefile_begin==NULL)
             {
                 sourcefile_begin = tg;
@@ -132,12 +142,129 @@ int main(int argc,char** argv)
 
     fclose(file);
 
-    #ifdef DEBUG
-    printf("DEBUG: Time to show what we got!\n");
+    // 
+    // converts lines into tokens
+    buffer = NULL;
+    bufferbuffer = NULL;
     SourceFileLine* loopnow = sourcefile_begin;
     while(1)
     {
-        printf("DEBUG:\n\tfile:\t%s\n\tline:\t%d\n\tcode:\t\"%s\"\n\n",loopnow->filename,loopnow->line,loopnow->content);
+        int is_string = 0;
+        SourceFileLineToken *tok_last = NULL;
+        int tokencount = 1;
+        for(int i = 0 ; i < strlen(loopnow->content); i++)
+        {
+            char t = ((char*)loopnow->content)[i];
+            if(buffer==NULL)
+            {
+                buffer = calloc(1,0);
+            }
+            bufferbuffer = buffer;
+            buffer = calloc(1,strlen(bufferbuffer) + 1);
+            memcpy(buffer,bufferbuffer,strlen(bufferbuffer));
+            free(bufferbuffer);
+            ((char*)buffer)[strlen(buffer)] = 0;
+            // ignore tabs
+            if(t=='\t')
+            {
+                continue;
+            }
+            // spaces could be a token splitter
+            if(t==' '&&buffer!=NULL&&strlen(buffer)==0&&is_string==0)
+            {
+                continue;
+            }
+            else if(t==' '&&buffer!=NULL&&strlen(buffer)>0&&is_string==0)
+            {
+                goto gohere;
+            }
+            // "" could be a token splitter
+            else if(t=='"')
+            {
+                if(is_string)
+                {
+                    is_string = 0;
+                }
+                else
+                {
+                    is_string = 1;
+                }
+                if(is_string==1&&strlen(buffer)==0)
+                {
+                    continue;
+                }
+                goto gohere;
+            }
+            else 
+            {
+                ((char*)buffer)[strlen(buffer)] = t;
+            }
+            continue;
+            gohere:
+            SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
+            tok->master = loopnow;
+            tok->token = buffer;
+            tok->token_id = tokencount++;
+            if(loopnow->tokens==NULL)
+            {
+                loopnow->tokens = tok;
+            }
+            else
+            {
+                tok_last->next = tok;
+            }
+            tok_last = tok;
+            #ifdef DEBUG
+            printf("DEBUG: parsed token \"%s\" \n",buffer);
+            #endif 
+            buffer = NULL;
+
+        }
+        if(buffer!=NULL&&strlen(buffer)>0)
+        {
+            SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
+            tok->master = loopnow;
+            tok->token = buffer;
+            tok->token_id = tokencount++;
+            if(loopnow->tokens==NULL)
+            {
+                loopnow->tokens = tok;
+            }
+            else
+            {
+                tok_last->next = tok;
+            }
+            tok_last = tok;
+            #ifdef DEBUG
+            printf("DEBUG: parsed token \"%s\" \n",buffer);
+            #endif 
+            buffer = NULL;
+        }
+        if(loopnow->next==NULL)
+        {
+            break;
+        }
+        loopnow = loopnow->next;
+    }
+
+    #ifdef DEBUG
+    printf("DEBUG: Time to show what we got!\n");
+    loopnow = sourcefile_begin;
+    while(1)
+    {
+        printf("DEBUG:\n\tfile\t\t:\t%s\n\tline\t\t:\t%d\n\tcode\t\t:\t\"%s\"\n\ttoken count\t:\t%d\n",loopnow->filename,loopnow->line,loopnow->content,loopnow->tokencount);
+        printf("\ttokens\t\t:\n");
+        SourceFileLineToken *tok = loopnow->tokens;
+        while(1)
+        {
+            printf("\t\t%i\t:\t%s\n",tok->token_id,tok->token);
+            if(tok->next==NULL)
+            {
+                break;
+            }
+            tok = tok->next;
+        }
+        printf("\n");
         if(loopnow->next==NULL)
         {
             break;
