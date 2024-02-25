@@ -15,13 +15,13 @@ build_compiler_unix:
 	gcc compiler/main.c -o ./bin/unix/stapelc
 
 build_std_wasm:
-	emcc src/main.c -o ./bin/wasm/stapel.wasm -D WASM
+	emcc src/main.c -o ./bin/wasm/stapel.js -D WASM
 
 build_compiler_wasm:
-	emcc compiler/main.c -o ./bin/wasm/stapelc.wasm -D WASM
+	emcc compiler/main.c -o ./bin/wasm/stapelc.js -D WASM
 
 build_std_wasm_debug:
-	emcc src/main.c -o ./bin/wasm/debug/stapel.wasm -D DEBUG -D WASM
+	emcc src/main.c -o ./bin/wasm/debug/stapel.js -D DEBUG -D WASM
 
 build_compiler_wasm_debug:
-	emcc compiler/main.c -o ./bin/wasm/debug/stapelc.wasm -D DEBUG -D WASM
+	emcc compiler/main.c -o ./bin/wasm/debug/stapelc.html -D DEBUG -D WASM
