@@ -1,5 +1,10 @@
+push value 4
 push value 1
-push value 2
-add 
-debug
+push address variable_a
+push value 12 
+push value 0
+push value 0
+int
 exit
+label variable_a
+dump text "Hello world"

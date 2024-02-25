@@ -501,6 +501,41 @@ int main(int argc,char** argv)
                 tok = tok->next;
                 label_defined = tok->token;
             }
+            else if(strcmp(tok->token,"dump")==0)
+            {
+                if(tok->next==NULL)
+                {
+                    grammar_error_in_token(tok,"type \"text\" or \"number\" expected after dump");
+                }
+                tok = tok->next;
+                if(strcmp(tok->token,"text")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        grammar_error_in_token(tok,"text value expected");
+                    }
+                    tok = tok->next;
+                    int strl = strlen(tok->token);
+                    for(int i = 0 ; i < strl ; i++)
+                    {
+                        add_compiled_tree_value(((uint8_t*)tok->token)[i],sizeof(uint8_t),NULL,0);
+                    }
+                    add_compiled_tree_value(0,sizeof(uint8_t),NULL,0);
+                }
+                else if(strcmp(tok->token,"number")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        grammar_error_in_token(tok,"number value expected");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0);
+                }
+                else
+                {
+                    grammar_error_in_token(tok,"\"text\" or \"number\" expected");
+                }
+            }
             else
             {
                 grammar_error_in_token(tok,"Cannot understand token");
