@@ -26,6 +26,7 @@ typedef struct{
     int requires_attention;
     char* label_defined;
     void* next;
+    SourceFileLineToken* connected_token;
 } CompiledTreeValue;
 
 SourceFileLine* sourcefile_begin = NULL;
@@ -33,6 +34,25 @@ SourceFileLine* sourcefile_now = NULL;
 
 CompiledTreeValue* targetfile_begin = NULL;
 CompiledTreeValue* targetfile_now = NULL;
+
+int find_location_of_label(char* label){
+    int innercount = 0;
+    CompiledTreeValue* looplater = targetfile_begin;
+    while(1)
+    {
+        if(looplater->label_defined!=NULL&&strcmp(label,looplater->label_defined)==0)
+        {
+            return innercount;
+        }
+        innercount += looplater->size;
+        if(looplater->next==NULL)
+        {
+            break;
+        }
+        looplater = looplater->next;
+    }
+    return -1;
+}
 
 void grammar_error_in_token(SourceFileLineToken* token,char* message)
 {
@@ -58,7 +78,7 @@ void grammar_error_in_line(SourceFileLine* token,char* message)
 
 char *label_defined = NULL;
 
-void add_compiled_tree_value(uint64_t value, int size, char* label_required, int requires_attention)
+void add_compiled_tree_value(uint64_t value, int size, char* label_required, int requires_attention,SourceFileLineToken* connected_token)
 {
     CompiledTreeValue* uv = (CompiledTreeValue*) malloc(sizeof(CompiledTreeValue));
     uv->label_defined = label_defined;
@@ -67,6 +87,7 @@ void add_compiled_tree_value(uint64_t value, int size, char* label_required, int
     uv->requires_attention = requires_attention;
     uv->size = size;
     uv->value = value;
+    uv->connected_token = connected_token;
     if(targetfile_begin==NULL)
     {
         targetfile_begin = uv;
@@ -373,12 +394,12 @@ int main(int argc,char** argv)
     //
     // setup header
     // signature
-    add_compiled_tree_value(0x53, sizeof(uint8_t) ,NULL, 0);
-    add_compiled_tree_value(0x54, sizeof(uint8_t) ,NULL, 0);
+    add_compiled_tree_value(0x53, sizeof(uint8_t) ,NULL, 0, NULL);
+    add_compiled_tree_value(0x54, sizeof(uint8_t) ,NULL, 0, NULL);
     // version
-    add_compiled_tree_value(1, sizeof(uint64_t) ,NULL, 0);
+    add_compiled_tree_value(1, sizeof(uint64_t) ,NULL, 0, NULL);
     // architecture
-    add_compiled_tree_value(2, sizeof(uint8_t) ,NULL, 0);
+    add_compiled_tree_value(2, sizeof(uint8_t) ,NULL, 0, NULL);
 
     //
     // check for grammar mistakes
@@ -390,7 +411,7 @@ int main(int argc,char** argv)
             SourceFileLineToken *tok = loopnow->tokens;
             if(strcmp(tok->token,"exit")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_EXIT,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_EXIT,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"push")==0)
             {
@@ -406,8 +427,8 @@ int main(int argc,char** argv)
                         grammar_error_in_token(tok,"variable required after \"push address\" statement");
                     }
                     tok = tok->next;
-                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_RAW_ADDR,sizeof(uint8_t),NULL,0);
-                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1);
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_RAW_ADDR,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
                 }
                 else if(strcmp(tok->token,"value_at")==0)
                 {
@@ -416,8 +437,8 @@ int main(int argc,char** argv)
                         grammar_error_in_token(tok,"integer value required after \"push value_at\" statement");
                     }
                     tok = tok->next;
-                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE,sizeof(uint8_t),NULL,0);
-                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1);
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
                 }
                 else if(strcmp(tok->token,"value")==0)
                 {
@@ -426,8 +447,8 @@ int main(int argc,char** argv)
                         grammar_error_in_token(tok,"integer value required after \"push value\" statement");
                     }
                     tok = tok->next;
-                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE,sizeof(uint8_t),NULL,0);
-                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,1);
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0, tok);
                 }
                 else
                 {
@@ -436,23 +457,23 @@ int main(int argc,char** argv)
             }
             else if(strcmp(tok->token,"debug")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_DEBUG,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_DEBUG,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"add")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_ADD,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_ADD,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"sub")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_SUB,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_SUB,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"mul")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_MUL,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_MUL,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"div")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_DIV,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_DIV,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"call")==0)
             {
@@ -461,8 +482,8 @@ int main(int argc,char** argv)
                     grammar_error_in_token(tok,"expected variable name after \"call\" statement");
                 }
                 tok = tok->next;
-                add_compiled_tree_value(STAPEL_INSTRUCTION_CALL,sizeof(uint8_t),NULL,0);
-                add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_CALL,sizeof(uint8_t),NULL,0, tok);
+                add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
             }
             else if(strcmp(tok->token,"jump")==0)
             {
@@ -471,16 +492,16 @@ int main(int argc,char** argv)
                     grammar_error_in_token(tok,"expected variable name after \"jump\" statement");
                 }
                 tok = tok->next;
-                add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0);
-                add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0, tok);
+                add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
             }
             else if(strcmp(tok->token,"int")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_INT,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_INT,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"ret")==0)
             {
-                add_compiled_tree_value(STAPEL_INSTRUCTION_RET,sizeof(uint8_t),NULL,0);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_RET,sizeof(uint8_t),NULL,0, tok);
             }
             else if(strcmp(tok->token,"pop")==0)
             {
@@ -489,8 +510,8 @@ int main(int argc,char** argv)
                     grammar_error_in_token(tok,"expected variable name after \"pop\" statement");
                 }
                 tok = tok->next;
-                add_compiled_tree_value(STAPEL_INSTRUCTION_POP,sizeof(uint8_t),NULL,0);
-                add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_POP,sizeof(uint8_t),NULL,0, tok);
+                add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
             }
             else if(strcmp(tok->token,"label")==0)
             {
@@ -518,9 +539,9 @@ int main(int argc,char** argv)
                     int strl = strlen(tok->token);
                     for(int i = 0 ; i < strl ; i++)
                     {
-                        add_compiled_tree_value(((uint8_t*)tok->token)[i],sizeof(uint8_t),NULL,0);
+                        add_compiled_tree_value(((uint8_t*)tok->token)[i],sizeof(uint8_t),NULL,0, tok);
                     }
-                    add_compiled_tree_value(0,sizeof(uint8_t),NULL,0);
+                    add_compiled_tree_value(0,sizeof(uint8_t),NULL,0, tok);
                 }
                 else if(strcmp(tok->token,"number")==0)
                 {
@@ -529,7 +550,7 @@ int main(int argc,char** argv)
                         grammar_error_in_token(tok,"number value expected");
                     }
                     tok = tok->next;
-                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0);
+                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0, tok);
                 }
                 else
                 {
@@ -554,11 +575,33 @@ int main(int argc,char** argv)
 
     //
     // Do we need to link something?
+    CompiledTreeValue* looplater = targetfile_begin;
+    while(1)
+    {
+        if(looplater->requires_attention==1)
+        {
+            #ifdef DEBUG
+            printf("DEBUG: line requires attention %s \n",looplater->label_required);
+            #endif 
+            int r = find_location_of_label(looplater->label_required);
+            if(r==-1)
+            {
+                grammar_error_in_token(looplater->connected_token,"Unable to find token");
+            }
+            looplater->value = r;
+            looplater->requires_attention = 0;
+        }
+        if(looplater->next==NULL)
+        {
+            break;
+        }
+        looplater = looplater->next;
+    }
 
     //
     // Build file
     FILE* targetfile = fopen(outputfile,"w");
-    CompiledTreeValue* looplater = targetfile_begin;
+    looplater = targetfile_begin;
     while(1)
     {
         fwrite((void*)&looplater->value,1,looplater->size,targetfile);
