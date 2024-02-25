@@ -174,6 +174,7 @@ int main(int argc,char** argv)
     char *buffer = NULL;
     char *bufferbuffer = NULL;
     int linenumber = 1;
+    int wordcount = 0;
     while(1)
     {
         char u = getc(file);
@@ -186,10 +187,10 @@ int main(int argc,char** argv)
             buffer = calloc(1,0);
         }
         bufferbuffer = buffer;
-        buffer = calloc(1,strlen(bufferbuffer) + 1);
-        memcpy(buffer,bufferbuffer,strlen(bufferbuffer));
+        buffer = calloc(1,wordcount + 1);
+        memcpy(buffer,bufferbuffer,wordcount);
         free(bufferbuffer);
-        ((char*)buffer)[strlen(buffer)] = 0;
+        ((char*)buffer)[wordcount] = 0;
         if(u=='\n')
         {
             #ifdef DEBUG
@@ -212,14 +213,17 @@ int main(int argc,char** argv)
             sourcefile_now = tg;
             buffer = NULL;
             linenumber += 1;
+            wordcount = 0;
         }
         else
         {
-            ((char*)buffer)[strlen(buffer)] = u;
+            ((char*)buffer)[wordcount] = u;
+            ((char*)buffer)[wordcount+1] = 0;
+            wordcount++;
         }
     }
 
-    if(buffer!=NULL&&strlen(buffer))
+    if(buffer!=NULL&&wordcount)
     {
         #ifdef DEBUG
         printf("DEBUG: parsed line \"%s\" \n",buffer);
@@ -242,6 +246,7 @@ int main(int argc,char** argv)
         buffer = NULL;
         linenumber += 1;
     }
+    wordcount = 0;
 
     fclose(file);
 
@@ -255,6 +260,7 @@ int main(int argc,char** argv)
         int is_string = 0;
         SourceFileLineToken *tok_last = NULL;
         int tokencount = 1;
+        wordcount = 0;
         if(strlen(loopnow->content))
         {
             for(int i = 0 ; i < strlen(loopnow->content); i++)
@@ -265,21 +271,21 @@ int main(int argc,char** argv)
                     buffer = calloc(1,0);
                 }
                 bufferbuffer = buffer;
-                buffer = calloc(1,strlen(bufferbuffer) + 1);
-                memcpy(buffer,bufferbuffer,strlen(bufferbuffer));
+                buffer = calloc(1,wordcount + 1);
+                memcpy(buffer,bufferbuffer,wordcount);
                 free(bufferbuffer);
-                ((char*)buffer)[strlen(buffer)] = 0;
+                ((char*)buffer)[wordcount] = 0;
                 // ignore tabs
                 if(t=='\t')
                 {
                     continue;
                 }
                 // spaces could be a token splitter
-                if(t==' '&&buffer!=NULL&&strlen(buffer)==0&&is_string==0)
+                if(t==' '&&buffer!=NULL&&wordcount==0&&is_string==0)
                 {
                     continue;
                 }
-                else if(t==' '&&buffer!=NULL&&strlen(buffer)>0&&is_string==0)
+                else if(t==' '&&buffer!=NULL&&wordcount>0&&is_string==0)
                 {
                     goto gohere;
                 }
@@ -294,7 +300,7 @@ int main(int argc,char** argv)
                     {
                         is_string = 1;
                     }
-                    if(is_string==1&&strlen(buffer)==0)
+                    if(is_string==1&&wordcount==0)
                     {
                         continue;
                     }
@@ -302,7 +308,9 @@ int main(int argc,char** argv)
                 }
                 else 
                 {
-                    ((char*)buffer)[strlen(buffer)] = t;
+                    ((char*)buffer)[wordcount] = t;
+                    ((char*)buffer)[wordcount + 1] = 0;
+                    wordcount++;
                 }
                 continue;
                 gohere:
@@ -323,6 +331,7 @@ int main(int argc,char** argv)
                 printf("DEBUG: parsed token \"%s\" \n",buffer);
                 #endif 
                 buffer = NULL;
+                wordcount = 0;
 
             }
             if(buffer!=NULL&&strlen(buffer)>0)
@@ -348,6 +357,7 @@ int main(int argc,char** argv)
                 printf("DEBUG: parsed token \"%s\" \n",buffer);
                 #endif 
                 buffer = NULL;
+                wordcount = 0;
             }
             loopnow->tokencount = tokencount-1;
         }

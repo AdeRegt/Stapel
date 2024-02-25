@@ -1,3 +1,5 @@
+all: all_unix all_wasm
+
 all_unix: build_std_unix_debug build_std_unix build_compiler_unix_debug build_compiler_unix
 
 all_wasm: build_std_wasm build_compiler_wasm build_std_wasm_debug build_compiler_wasm_debug
@@ -24,4 +26,4 @@ build_std_wasm_debug:
 	emcc src/main.c -o ./bin/wasm/debug/stapel.js -D DEBUG -D WASM
 
 build_compiler_wasm_debug:
-	emcc compiler/main.c -o ./bin/wasm/debug/stapelc.html -D DEBUG -D WASM
+	emcc compiler/main.c -o ./bin/wasm/debug/stapelc.js -D DEBUG -D WASM
