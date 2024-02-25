@@ -1,13 +1,27 @@
-all_unix: build_std_unix_debug build_std_unix build_compiler_debug build_compiler
+all_unix: build_std_unix_debug build_std_unix build_compiler_unix_debug build_compiler_unix
+
+all_wasm: build_std_wasm build_compiler_wasm build_std_wasm_debug build_compiler_wasm_debug
 
 build_std_unix_debug:
-	gcc src/main.c -o ./bin/unix/debug/stapel  -D DEBUG
+	gcc src/main.c -o ./bin/unix/debug/stapel -D DEBUG
 
 build_std_unix:
 	gcc src/main.c -o ./bin/unix/stapel
 
-build_compiler_debug:
-	gcc compiler/main.c -o ./bin/unix/debug/stapelc  -D DEBUG
+build_compiler_unix_debug:
+	gcc compiler/main.c -o ./bin/unix/debug/stapelc -D DEBUG
 
-build_compiler:
+build_compiler_unix:
 	gcc compiler/main.c -o ./bin/unix/stapelc
+
+build_std_wasm:
+	emcc src/main.c -o ./bin/wasm/stapel.wasm -D WASM
+
+build_compiler_wasm:
+	emcc compiler/main.c -o ./bin/wasm/stapelc.wasm -D WASM
+
+build_std_wasm_debug:
+	emcc src/main.c -o ./bin/wasm/debug/stapel.wasm -D DEBUG -D WASM
+
+build_compiler_wasm_debug:
+	emcc compiler/main.c -o ./bin/wasm/debug/stapelc.wasm -D DEBUG -D WASM

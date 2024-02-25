@@ -170,6 +170,7 @@ void handle_next_instruction()
     }
     else if(instruction==STAPEL_INSTRUCTION_INT)
     {
+        #ifndef WASM
         add_instruction_pointer_uint8();
         uint64_t asmEDI = stack_pop();
         uint64_t asmESI = stack_pop();
@@ -183,6 +184,10 @@ void handle_next_instruction()
         void* res = 0;
         __asm__ __volatile__( "int $0x80" : "=a"(res) : "a"(asmEAX) , "b" (asmEBX), "c" (asmECX), "d" (asmEDX), "S" (asmESI), "D" (asmEDI) );
         stack_push((uint64_t)res);
+        #else 
+        printf("FATAL: Invalid instruction\n");
+        exit(EXIT_FAILURE);
+        #endif 
     }
     else if(instruction==STAPEL_INSTRUCTION_JUMP_EQUALS)
     {
