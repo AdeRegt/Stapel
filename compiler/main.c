@@ -313,8 +313,9 @@ int main(int argc,char** argv)
                     wordcount++;
                 }
                 continue;
+                SourceFileLineToken *tok;
                 gohere:
-                SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
+                tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
                 tok->master = loopnow;
                 tok->token = buffer;
                 tok->token_id = tokencount++;
@@ -404,12 +405,12 @@ int main(int argc,char** argv)
     //
     // setup header
     // signature
-    add_compiled_tree_value(0x53, sizeof(uint8_t) ,NULL, 0, NULL);
-    add_compiled_tree_value(0x54, sizeof(uint8_t) ,NULL, 0, NULL);
+    add_compiled_tree_value(STAPEL_HEADER_SIGNATURE_A, sizeof(uint8_t) ,NULL, 0, NULL);
+    add_compiled_tree_value(STAPEL_HEADER_SIGNATURE_B, sizeof(uint8_t) ,NULL, 0, NULL);
     // version
-    add_compiled_tree_value(1, sizeof(uint64_t) ,NULL, 0, NULL);
+    add_compiled_tree_value(STAPEL_HEADER_VERSION, sizeof(uint64_t) ,NULL, 0, NULL);
     // architecture
-    add_compiled_tree_value(2, sizeof(uint8_t) ,NULL, 0, NULL);
+    add_compiled_tree_value(STAPEL_HEADER_ARCHITECTURE, sizeof(uint8_t) ,NULL, 0, NULL);
 
     //
     // check for grammar mistakes
@@ -567,6 +568,18 @@ int main(int argc,char** argv)
                     grammar_error_in_token(tok,"\"text\" or \"number\" expected");
                 }
             }
+            #if STAPEL_HEADER_VERSION > 1
+            else if(strcmp(tok->token,"syscall")==0)
+            {
+                if(tok->next==NULL)
+                {
+                    grammar_error_in_token(tok,"expected number after \"syscall\" statement");
+                }
+                tok = tok->next;
+                add_compiled_tree_value(STAPEL_INSTRUCTION_SYSCALL,sizeof(uint8_t),NULL,0, tok);
+                add_compiled_tree_value(atoi(tok->token),sizeof(uint8_t),NULL,0, tok);
+            }
+            #endif 
             else
             {
                 grammar_error_in_token(tok,"Cannot understand token");

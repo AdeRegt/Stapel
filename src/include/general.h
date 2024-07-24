@@ -23,7 +23,7 @@ typedef struct {
 
 #define STAPEL_HEADER_SIGNATURE_A                   'S'
 #define STAPEL_HEADER_SIGNATURE_B                   'T'
-#define STAPEL_HEADER_VERSION                       1
+#define STAPEL_HEADER_VERSION                       2
 #define STAPEL_HEADER_ARCHITECTURE                  2
 
 #define STAPEL_INSTRUCTION_EXIT                     0x00
@@ -43,3 +43,6 @@ typedef struct {
 #define STAPEL_INSTRUCTION_RET                      0x0E
 #define STAPEL_INSTRUCTION_POP                      0x0F
 #define STAPEL_INSTRUCTION_PUSH_RAW_ADDR            0x10
+#define STAPEL_INSTRUCTION_SYSCALL                  0x11
+
+#define STAPEL_SYSCALL_VERSION                      1
