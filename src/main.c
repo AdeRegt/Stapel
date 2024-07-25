@@ -331,10 +331,15 @@ StapelMultitaskingInstance* insert_stapel_cardridge(void* memoryregion)
         return 0;
     }
 
-    if(sth->version!=STAPEL_HEADER_VERSION)
+    if(sth->version>STAPEL_HEADER_VERSION)
     {
         printf("FATAL: Invalid version \n");
         return 0;
+    }
+
+    if(sth->version!=STAPEL_HEADER_VERSION)
+    {
+        printf("Warning: Version mismatch \n");
     }
 
     if(sth->architecture!=STAPEL_HEADER_ARCHITECTURE)
