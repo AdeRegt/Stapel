@@ -15,8 +15,51 @@
 #ifndef WASM
     #define PRINTLONG "%lx"
 #endif 
+#ifdef PROGRAM
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif 
 int multitaskingmax = 0;
 StapelMultitaskingInstance multitaskingarea[10];
+
+#ifdef PROGRAM
+static const int STDIN = 0;
+
+void enable_terminal_features(){
+    struct termios term;
+    tcgetattr(STDIN, &term);
+    term.c_lflag &= ~ICANON;
+    tcsetattr(STDIN, TCSANOW, &term);
+    setbuf(stdin, NULL);
+}
+
+int  getch(void) {
+    int ch = 0;
+    int bytesWaiting;
+    ioctl(STDIN, FIONREAD, &bytesWaiting);
+    if(bytesWaiting>0){
+        struct termios oldattr, newattr;
+        tcgetattr( STDIN_FILENO, &oldattr );
+        newattr = oldattr;
+        newattr.c_lflag &= ~( ICANON | ECHO );
+        tcsetattr( STDIN_FILENO, TCSANOW, &newattr );
+        ch = getchar();
+        tcsetattr( STDIN_FILENO, TCSANOW, &oldattr );
+    }
+    return ch;
+}
+#endif 
+#ifdef WASM
+int kbbuff = 0;
+void setKbbuf(int val){
+    kbbuff = val;
+}
+int  getch(void){
+    return kbbuff;
+}
+#endif 
 
 void call_stack_push(StapelMultitaskingInstance* cv,uint64_t value)
 {
@@ -77,6 +120,9 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
     #endif
     if(instruction==STAPEL_INSTRUCTION_EXIT)
     {
+        #ifdef DEBUG
+        printf("DEBUG: program ends with EXIT\n");
+        #endif
 		return 0;
     }
     else if(instruction==STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE)
@@ -211,7 +257,7 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         #endif
         if(valA==valB)
         {
-            cv->instruction_pointer = value_at_address;
+            cv->instruction_pointer = ( value_at_address + (uint64_t)cv->central_memory );
         }
     }
     else if(instruction==STAPEL_INSTRUCTION_JUMP_MORE)
@@ -295,7 +341,15 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
             #ifdef DEBUG
             printf("DEBUG: syscall print string with address: " PRINTLONG "\n",straddr);
             #endif
-            printf("%s",(char*)(straddr));
+            printf("%s",(char*)straddr);
+        }
+        else if(callid==2)
+        {
+            uint64_t res = getch();
+            #ifdef DEBUG
+            printf("DEBUG: syscall getchar (does not wait) with " PRINTLONG "\n",res);
+            #endif 
+            stack_push(cv,res);
         }
     }
     #endif 
@@ -354,9 +408,19 @@ StapelMultitaskingInstance* insert_stapel_cardridge(void* memoryregion)
 	return cardridge;
 }
 
+#ifdef WASM
+StapelMultitaskingInstance* defproc = NULL;
+int handle_default_next_instruction(){
+    return handle_next_instruction(defproc);
+}
+#endif 
+
 #ifndef STAPELOS
 int main(int argc , char** argv)
 {
+    #ifdef PROGRAM
+        enable_terminal_features();
+    #endif 
     //
     // show debugging information
     #ifdef DEBUG
@@ -408,8 +472,13 @@ int main(int argc , char** argv)
     {
         exit(EXIT_FAILURE);
     }
+    #ifdef WASM
+    defproc = cv;
+    #endif 
 
+    #ifndef WASM
     while(handle_next_instruction(cv));
+    #endif 
 
     exit(EXIT_SUCCESS);
 }

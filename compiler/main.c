@@ -498,13 +498,45 @@ int main(int argc,char** argv)
             }
             else if(strcmp(tok->token,"jump")==0)
             {
-                if(tok->next==NULL)
-                {
-                    grammar_error_in_token(tok,"expected variable name after \"jump\" statement");
-                }
-                tok = tok->next;
-                add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0, tok);
-                add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                #if STAPEL_HEADER_VERSION > 1
+                    if(tok->next==NULL)
+                    {
+                        grammar_error_in_token(tok,"expected reason after \"jump\" statement (directly or equals)");
+                    }
+                    tok = tok->next;
+                    if(strcmp(tok->token,"directly")==0)
+                    {
+                        if(tok->next==NULL)
+                        {
+                            grammar_error_in_token(tok,"expected variable name after \"jump directly\" statement");
+                        }
+                        tok = tok->next;
+                        add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0, tok);
+                        add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                    }
+                    else if(strcmp(tok->token,"equals")==0)
+                    {
+                        if(tok->next==NULL)
+                        {
+                            grammar_error_in_token(tok,"expected variable name after \"jump equals\" statement");
+                        }
+                        tok = tok->next;
+                        add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP_EQUALS,sizeof(uint8_t),NULL,0, tok);
+                        add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                    }
+                    else
+                    {
+                        grammar_error_in_token(tok,"The command \"jump\" should be followed by \"directly\" or \"equals\"");
+                    }
+                #else 
+                    if(tok->next==NULL)
+                    {
+                        grammar_error_in_token(tok,"expected variable name after \"jump\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                #endif 
             }
             else if(strcmp(tok->token,"int")==0)
             {

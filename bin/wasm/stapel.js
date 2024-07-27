@@ -4264,6 +4264,8 @@ var wasmImports = {
 };
 var wasmExports = createWasm();
 var ___wasm_call_ctors = createExportWrapper('__wasm_call_ctors');
+var _setKbbuf = Module['_setKbbuf'] = createExportWrapper('setKbbuf');
+var _handle_default_next_instruction = Module['_handle_default_next_instruction'] = createExportWrapper('handle_default_next_instruction');
 var _main = Module['_main'] = createExportWrapper('__main_argc_argv');
 var _fflush = createExportWrapper('fflush');
 var _emscripten_stack_init = () => (_emscripten_stack_init = wasmExports['emscripten_stack_init'])();
