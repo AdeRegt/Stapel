@@ -4,6 +4,7 @@
 #else
 #include "../../kernel/include/string.h"
 #include "../../kernel/include/memory.h"
+#include "../../kernel/include/ps2_keyboard.h"
 #define printf printk
 #endif
 #include <stdint.h>
