@@ -100,6 +100,39 @@ void add_compiled_tree_value(uint64_t value, int size, char* label_required, int
     label_defined = NULL;
 }
 
+void fixstring(char* str)
+{
+    int sz = strlen(str);
+    int changes = 0;
+    int pointer = 0;
+    while(sz!=pointer){
+        char deze = str[pointer];
+        if(changes&&(pointer+1)!=sz){
+            str[pointer] = str[pointer+1];
+        }else if(changes){
+            str[pointer] = 0;
+        }else if(str[pointer]=='\\'){
+            changes = 1;
+            switch(str[pointer+1]){
+                case '\\':
+                    str[pointer] = '\\';
+                    changes = 2;
+                    break;
+                case 'n':
+                    str[pointer] = '\n';
+                    break;
+                case 't':
+                    str[pointer] = '\t';
+                    break;
+            }
+        }
+        pointer++;
+    }
+    if(changes == 1){
+        fixstring(str);
+    }
+}
+
 int main(int argc,char** argv)
 {
     
@@ -294,6 +327,7 @@ int main(int argc,char** argv)
                 {
                     if(is_string)
                     {
+                        fixstring(buffer);
                         is_string = 0;
                     }
                     else
