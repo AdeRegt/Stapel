@@ -54,7 +54,7 @@ int find_location_of_label(char* label){
     return -1;
 }
 
-void grammar_error_in_token(SourceFileLineToken* token,char* message)
+int grammar_error_in_token(SourceFileLineToken* token,char* message)
 {
     printf("FATAL: An error occured while compiling:\n");
     printf("       File   :   %s\n",token->master->filename);
@@ -63,17 +63,17 @@ void grammar_error_in_token(SourceFileLineToken* token,char* message)
     printf("       TokenAt:   %d\n",token->token_id);
     printf("       Token  :   %s\n",token->token);
     printf("       Message:   %s\n",message);
-    exit(EXIT_FAILURE);
+    return EXIT_FAILURE;
 }
 
-void grammar_error_in_line(SourceFileLine* token,char* message)
+int grammar_error_in_line(SourceFileLine* token,char* message)
 {
     printf("FATAL: An error occured while compiling:\n");
     printf("       File   :   %s\n",token->filename);
     printf("       LineNo :   %d\n",token->line);
     printf("       Line   :   %s\n",token->content);
     printf("       Message:   %s\n",message);
-    exit(EXIT_FAILURE);
+    return EXIT_FAILURE;
 }
 
 char *label_defined = NULL;
@@ -135,70 +135,55 @@ void fixstring(char* str)
 
 int main(int argc,char** argv)
 {
-    
-    //
-    // show debugging information
-    #ifdef DEBUG
-    printf("DEBUG: Stapel compiler is compiled in debug mode!\n");
-    printf("DEBUG: boot: argc: %d \n",argc);
-    for(int i = 0 ; i < argc ; i++)
-    {
-        printf("DEBUG: arg[%d] : %s \n",i+1,argv[i]);
-    }
-    #endif 
 
     //
     // parse all the options
     char* inputfile = NULL;
     char* outputfile = NULL;
+    uint8_t debug = 0;
     for(int i = 1 ; i < argc ; i++)
     {
         char *command = argv[i];
-        #ifdef DEBUG
-        printf("DEBUG: Trying to parse instruction \"%s\" \n",command);
-        #endif 
         if(strcmp(command,"--input")==0)
         {
             i++;
             command = argv[i];
-            #ifdef DEBUG
-            printf("DEBUG: Assigning inputfile to \"%s\" \n",command);
-            #endif 
             inputfile = command;
         }
         else if(strcmp(command,"--output")==0)
         {
             i++;
             command = argv[i];
-            #ifdef DEBUG
-            printf("DEBUG: Assigning outputfile to \"%s\" \n",command);
-            #endif 
             outputfile = command;
+        }
+        else if(strcmp(command,"--verbose")==0)
+        {
+            debug = 1;
         }
         else
         {
             printf("ERROR: Unrecognised option %s !\n",command);
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         }
     }
 
     if(inputfile==NULL)
     {
         printf("ERROR: Missing inputfile !\n");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     if(outputfile==NULL)
     {
         printf("ERROR: Missing outputfile !\n");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     FILE* file = fopen(inputfile,"r");
     if(!file)
     {
         printf("ERROR: Unable to open inputfile !\n");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     
@@ -226,9 +211,10 @@ int main(int argc,char** argv)
         ((char*)buffer)[wordcount] = 0;
         if(u=='\n')
         {
-            #ifdef DEBUG
-            printf("DEBUG: parsed line \"%s\" \n",buffer);
-            #endif 
+            if(debug)
+            {
+                printf("DEBUG: parsed line \"%s\" \n",buffer);
+            }
             SourceFileLine* tg = (SourceFileLine*) calloc(1,sizeof(SourceFileLine));
             tg->content = buffer;
             tg->filename = inputfile;
@@ -258,9 +244,10 @@ int main(int argc,char** argv)
 
     if(buffer!=NULL&&wordcount)
     {
-        #ifdef DEBUG
-        printf("DEBUG: parsed line \"%s\" \n",buffer);
-        #endif 
+        if(debug)
+        {
+            printf("DEBUG: parsed line \"%s\" \n",buffer);
+        }
         SourceFileLine* tg = (SourceFileLine*) calloc(1,sizeof(SourceFileLine));
         tg->content = buffer;
         tg->filename = inputfile;
@@ -362,9 +349,9 @@ int main(int argc,char** argv)
                     tok_last->next = tok;
                 }
                 tok_last = tok;
-                #ifdef DEBUG
-                printf("DEBUG: parsed token \"%s\" \n",buffer);
-                #endif 
+                if(debug){
+                    printf("DEBUG: parsed token \"%s\" \n",buffer);
+                }
                 buffer = NULL;
                 wordcount = 0;
 
@@ -373,7 +360,7 @@ int main(int argc,char** argv)
             {
                 if(is_string==1)
                 {
-                    grammar_error_in_line(loopnow,"String is not closed!");
+                    return grammar_error_in_line(loopnow,"String is not closed!");
                 }
                 SourceFileLineToken *tok = (SourceFileLineToken*) calloc(1,sizeof(SourceFileLineToken));
                 tok->master = loopnow;
@@ -388,9 +375,10 @@ int main(int argc,char** argv)
                     tok_last->next = tok;
                 }
                 tok_last = tok;
-                #ifdef DEBUG
-                printf("DEBUG: parsed token \"%s\" \n",buffer);
-                #endif 
+                if(debug)
+                {
+                    printf("DEBUG: parsed token \"%s\" \n",buffer);
+                }
                 buffer = NULL;
                 wordcount = 0;
             }
@@ -407,34 +395,35 @@ int main(int argc,char** argv)
         loopnow = loopnow->next;
     }
 
-    #ifdef DEBUG
-    printf("DEBUG: Time to show what we got!\n");
-    loopnow = sourcefile_begin;
-    while(1)
+    if(debug)
     {
-        printf("DEBUG:\n\tfile\t\t:\t%s\n\tline\t\t:\t%d\n\tcode\t\t:\t\"%s\"\n\ttoken count\t:\t%d\n",loopnow->filename,loopnow->line,loopnow->content,loopnow->tokencount);
-        printf("\ttokens\t\t:\n");
-        if(loopnow->tokencount)
+        printf("DEBUG: Time to show what we got!\n");
+        loopnow = sourcefile_begin;
+        while(1)
         {
-            SourceFileLineToken *tok = loopnow->tokens;
-            while(1)
+            printf("DEBUG:\n\tfile\t\t:\t%s\n\tline\t\t:\t%d\n\tcode\t\t:\t\"%s\"\n\ttoken count\t:\t%d\n",loopnow->filename,loopnow->line,loopnow->content,loopnow->tokencount);
+            printf("\ttokens\t\t:\n");
+            if(loopnow->tokencount)
             {
-                printf("\t\t%i\t:\t%s\n",tok->token_id,tok->token);
-                if(tok->next==NULL)
+                SourceFileLineToken *tok = loopnow->tokens;
+                while(1)
                 {
-                    break;
+                    printf("\t\t%i\t:\t%s\n",tok->token_id,tok->token);
+                    if(tok->next==NULL)
+                    {
+                        break;
+                    }
+                    tok = tok->next;
                 }
-                tok = tok->next;
             }
+            printf("\n");
+            if(loopnow->next==NULL)
+            {
+                break;
+            }
+            loopnow = loopnow->next;
         }
-        printf("\n");
-        if(loopnow->next==NULL)
-        {
-            break;
-        }
-        loopnow = loopnow->next;
     }
-    #endif 
 
     //
     // setup header
@@ -462,14 +451,14 @@ int main(int argc,char** argv)
             {
                 if(tok->next==NULL)
                 {
-                    grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected after push statement");
+                    return grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected after push statement");
                 }
                 tok = tok->next;
                 if(strcmp(tok->token,"address")==0)
                 {
                     if(tok->next==NULL)
                     {
-                        grammar_error_in_token(tok,"variable required after \"push address\" statement");
+                        return grammar_error_in_token(tok,"variable required after \"push address\" statement");
                     }
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_RAW_ADDR,sizeof(uint8_t),NULL,0, tok);
@@ -479,7 +468,7 @@ int main(int argc,char** argv)
                 {
                     if(tok->next==NULL)
                     {
-                        grammar_error_in_token(tok,"integer value required after \"push value_at\" statement");
+                        return grammar_error_in_token(tok,"integer value required after \"push value_at\" statement");
                     }
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE,sizeof(uint8_t),NULL,0, tok);
@@ -489,7 +478,7 @@ int main(int argc,char** argv)
                 {
                     if(tok->next==NULL)
                     {
-                        grammar_error_in_token(tok,"integer value required after \"push value\" statement");
+                        return grammar_error_in_token(tok,"integer value required after \"push value\" statement");
                     }
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE,sizeof(uint8_t),NULL,0, tok);
@@ -497,7 +486,7 @@ int main(int argc,char** argv)
                 }
                 else
                 {
-                    grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected");
+                    return grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected");
                 }
             }
             else if(strcmp(tok->token,"debug")==0)
@@ -524,7 +513,7 @@ int main(int argc,char** argv)
             {
                 if(tok->next==NULL)
                 {
-                    grammar_error_in_token(tok,"expected variable name after \"call\" statement");
+                    return grammar_error_in_token(tok,"expected variable name after \"call\" statement");
                 }
                 tok = tok->next;
                 add_compiled_tree_value(STAPEL_INSTRUCTION_CALL,sizeof(uint8_t),NULL,0, tok);
@@ -535,14 +524,14 @@ int main(int argc,char** argv)
                 #if STAPEL_HEADER_VERSION > 1
                     if(tok->next==NULL)
                     {
-                        grammar_error_in_token(tok,"expected reason after \"jump\" statement (directly or equals)");
+                        return grammar_error_in_token(tok,"expected reason after \"jump\" statement (directly or equals)");
                     }
                     tok = tok->next;
                     if(strcmp(tok->token,"directly")==0)
                     {
                         if(tok->next==NULL)
                         {
-                            grammar_error_in_token(tok,"expected variable name after \"jump directly\" statement");
+                            return grammar_error_in_token(tok,"expected variable name after \"jump directly\" statement");
                         }
                         tok = tok->next;
                         add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0, tok);
@@ -552,7 +541,7 @@ int main(int argc,char** argv)
                     {
                         if(tok->next==NULL)
                         {
-                            grammar_error_in_token(tok,"expected variable name after \"jump equals\" statement");
+                            return grammar_error_in_token(tok,"expected variable name after \"jump equals\" statement");
                         }
                         tok = tok->next;
                         add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP_EQUALS,sizeof(uint8_t),NULL,0, tok);
@@ -560,12 +549,12 @@ int main(int argc,char** argv)
                     }
                     else
                     {
-                        grammar_error_in_token(tok,"The command \"jump\" should be followed by \"directly\" or \"equals\"");
+                        return grammar_error_in_token(tok,"The command \"jump\" should be followed by \"directly\" or \"equals\"");
                     }
                 #else 
                     if(tok->next==NULL)
                     {
-                        grammar_error_in_token(tok,"expected variable name after \"jump\" statement");
+                        return grammar_error_in_token(tok,"expected variable name after \"jump\" statement");
                     }
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0, tok);
@@ -584,7 +573,7 @@ int main(int argc,char** argv)
             {
                 if(tok->next==NULL)
                 {
-                    grammar_error_in_token(tok,"expected variable name after \"pop\" statement");
+                    return grammar_error_in_token(tok,"expected variable name after \"pop\" statement");
                 }
                 tok = tok->next;
                 add_compiled_tree_value(STAPEL_INSTRUCTION_POP,sizeof(uint8_t),NULL,0, tok);
@@ -594,7 +583,7 @@ int main(int argc,char** argv)
             {
                 if(tok->next==NULL)
                 {
-                    grammar_error_in_token(tok,"name of label expected after \"label\" statement");
+                    return grammar_error_in_token(tok,"name of label expected after \"label\" statement");
                 }
                 tok = tok->next;
                 label_defined = tok->token;
@@ -603,14 +592,14 @@ int main(int argc,char** argv)
             {
                 if(tok->next==NULL)
                 {
-                    grammar_error_in_token(tok,"type \"text\" or \"number\" expected after dump");
+                    return grammar_error_in_token(tok,"type \"text\" or \"number\" expected after dump");
                 }
                 tok = tok->next;
                 if(strcmp(tok->token,"text")==0)
                 {
                     if(tok->next==NULL)
                     {
-                        grammar_error_in_token(tok,"text value expected");
+                        return grammar_error_in_token(tok,"text value expected");
                     }
                     tok = tok->next;
                     int strl = strlen(tok->token);
@@ -624,14 +613,14 @@ int main(int argc,char** argv)
                 {
                     if(tok->next==NULL)
                     {
-                        grammar_error_in_token(tok,"number value expected");
+                        return grammar_error_in_token(tok,"number value expected");
                     }
                     tok = tok->next;
                     add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0, tok);
                 }
                 else
                 {
-                    grammar_error_in_token(tok,"\"text\" or \"number\" expected");
+                    return grammar_error_in_token(tok,"\"text\" or \"number\" expected");
                 }
             }
             #if STAPEL_HEADER_VERSION > 1
@@ -639,7 +628,7 @@ int main(int argc,char** argv)
             {
                 if(tok->next==NULL)
                 {
-                    grammar_error_in_token(tok,"expected number after \"syscall\" statement");
+                    return grammar_error_in_token(tok,"expected number after \"syscall\" statement");
                 }
                 tok = tok->next;
                 add_compiled_tree_value(STAPEL_INSTRUCTION_SYSCALL,sizeof(uint8_t),NULL,0, tok);
@@ -648,11 +637,11 @@ int main(int argc,char** argv)
             #endif 
             else
             {
-                grammar_error_in_token(tok,"Cannot understand token");
+                return grammar_error_in_token(tok,"Cannot understand token");
             }
             if(tok->next!=NULL)
             {
-                grammar_error_in_token(tok,"Garbage after this token");
+                return grammar_error_in_token(tok,"Garbage after this token");
             }
         }
         if(loopnow->next==NULL)
@@ -669,13 +658,14 @@ int main(int argc,char** argv)
     {
         if(looplater->requires_attention==1)
         {
-            #ifdef DEBUG
-            printf("DEBUG: line requires attention %s \n",looplater->label_required);
-            #endif 
+            if(debug)
+            {
+                printf("DEBUG: line requires attention %s \n",looplater->label_required);
+            }
             int r = find_location_of_label(looplater->label_required);
             if(r==-1)
             {
-                grammar_error_in_token(looplater->connected_token,"Unable to find token");
+                return grammar_error_in_token(looplater->connected_token,"Unable to find token");
             }
             looplater->value = r;
             looplater->requires_attention = 0;
@@ -702,5 +692,5 @@ int main(int argc,char** argv)
     }
     fclose(targetfile);
 
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }

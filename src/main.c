@@ -155,7 +155,7 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint64_t internalstack = (uint64_t) cv->stack;
         while(1)
         {
-            printf("- address: 0x" PRINTLONG " value:" PRINTLONG " \n",internalstack,((uint64_t*)internalstack)[0]);
+            printf("- address: 0x" PRINTLONG " value: 0x" PRINTLONG " \n",internalstack,((uint64_t*)internalstack)[0]);
             if(internalstack==cv->stack_pointer)
             {
                 break;
@@ -166,7 +166,7 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         internalstack = (uint64_t) cv->call_stack;
         while(1)
         {
-            printf("- address: 0x" PRINTLONG " value:" PRINTLONG " \n",internalstack,((uint64_t*)internalstack)[0]);
+            printf("- address: 0x" PRINTLONG " value: 0x" PRINTLONG " \n",internalstack,((uint64_t*)internalstack)[0]);
             if(internalstack==cv->call_stack_pointer)
             {
                 break;
@@ -443,7 +443,7 @@ int main(int argc , char** argv)
     if(argc!=2)
     {
         printf("FATAL: Expected one parameter: filename! Example: %s example.st \n",argv[0]);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     //
@@ -455,7 +455,7 @@ int main(int argc , char** argv)
     if(!targetfile)
     {
         printf("FATAL: Unable to open file in read mode: \"%s\" \n",argv[1]);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     fseek(targetfile,0,SEEK_END);
@@ -476,7 +476,7 @@ int main(int argc , char** argv)
     StapelMultitaskingInstance* cv = insert_stapel_cardridge(central_memory);
     if(cv==NULL)
     {
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     #ifdef WASM
     defproc = cv;
@@ -486,6 +486,6 @@ int main(int argc , char** argv)
     while(handle_next_instruction(cv));
     #endif 
 
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
 #endif 
