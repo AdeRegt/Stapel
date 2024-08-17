@@ -451,7 +451,11 @@ int main(int argc,char** argv)
             {
                 if(tok->next==NULL)
                 {
-                    return grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected after push statement");
+                    #if STAPEL_HEADER_VERSION > 1
+                        return grammar_error_in_token(tok,"\"address\",\"64value_at\",\"64value\",\"8value_at\" or \"8value\" expected after push statement");
+                    #else 
+                        return grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected after push statement");
+                    #endif 
                 }
                 tok = tok->next;
                 if(strcmp(tok->token,"address")==0)
@@ -464,6 +468,48 @@ int main(int argc,char** argv)
                     add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_RAW_ADDR,sizeof(uint8_t),NULL,0, tok);
                     add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
                 }
+                #if STAPEL_HEADER_VERSION > 1
+                else if(strcmp(tok->token,"64value_at")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push value_at\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE_64,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                }
+                else if(strcmp(tok->token,"64value")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push value\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE_64,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0, tok);
+                }
+                else if(strcmp(tok->token,"8value_at")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push 8value_at\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE_8,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                }
+                else if(strcmp(tok->token,"8value")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push 8value\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE_8,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(atoi(tok->token),sizeof(uint8_t),NULL,0, tok);
+                }
+                #else 
                 else if(strcmp(tok->token,"value_at")==0)
                 {
                     if(tok->next==NULL)
@@ -471,7 +517,7 @@ int main(int argc,char** argv)
                         return grammar_error_in_token(tok,"integer value required after \"push value_at\" statement");
                     }
                     tok = tok->next;
-                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE_64,sizeof(uint8_t),NULL,0, tok);
                     add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
                 }
                 else if(strcmp(tok->token,"value")==0)
@@ -481,9 +527,10 @@ int main(int argc,char** argv)
                         return grammar_error_in_token(tok,"integer value required after \"push value\" statement");
                     }
                     tok = tok->next;
-                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE_64,sizeof(uint8_t),NULL,0, tok);
                     add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0, tok);
                 }
+                #endif 
                 else
                 {
                     return grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected");
@@ -571,13 +618,61 @@ int main(int argc,char** argv)
             }
             else if(strcmp(tok->token,"pop")==0)
             {
+                #if STAPEL_HEADER_VERSION > 1
+                if(tok->next==NULL)
+                {
+                    return grammar_error_in_token(tok,"expected  \"64value\",\"8value\",\"64value_at\" or \"8value_at\" after pop statement");
+                }
+                tok = tok->next;
+                if(strcmp(tok->token,"64value")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push value\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_POP_64,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                }
+                else if(strcmp(tok->token,"8value")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push 8value\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_POP_8,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                }
+                if(strcmp(tok->token,"64value_at")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push 64value_at\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_POP_AT_64,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                }
+                else if(strcmp(tok->token,"8value_at")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push 8value_at\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_POP_AT_8,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                }
+                #else 
                 if(tok->next==NULL)
                 {
                     return grammar_error_in_token(tok,"expected variable name after \"pop\" statement");
                 }
                 tok = tok->next;
-                add_compiled_tree_value(STAPEL_INSTRUCTION_POP,sizeof(uint8_t),NULL,0, tok);
+                add_compiled_tree_value(STAPEL_INSTRUCTION_POP_64,sizeof(uint8_t),NULL,0, tok);
                 add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                #endif 
             }
             else if(strcmp(tok->token,"label")==0)
             {
