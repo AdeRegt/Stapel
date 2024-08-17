@@ -49,5 +49,9 @@ typedef struct {
 #define STAPEL_INSTRUCTION_POP_8                    0x14
 #define STAPEL_INSTRUCTION_POP_AT_64                0x15
 #define STAPEL_INSTRUCTION_POP_AT_8                 0x16
+#define STAPEL_INSTRUCTION_PUSH_VALUE_16            0x17
+#define STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE_16    0x18
+#define STAPEL_INSTRUCTION_POP_16                   0x19
+#define STAPEL_INSTRUCTION_POP_AT_16                0x1A
 
 #define STAPEL_SYSCALL_VERSION                      1
