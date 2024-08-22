@@ -2,6 +2,14 @@
 ## Explaination
 Stack based language (compiler tool and virtual machine)
 
+## Required tools
+For all:
+```Make```
+For Windows and Unix:
+```gcc```
+For WebAssembly:
+```emscripten```
+
 ## Virtual machine
 ### Unix
 Calls
