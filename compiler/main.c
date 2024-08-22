@@ -591,7 +591,7 @@ int main(int argc,char** argv)
                 #if STAPEL_HEADER_VERSION > 1
                     if(tok->next==NULL)
                     {
-                        return grammar_error_in_token(tok,"expected reason after \"jump\" statement (directly or equals)");
+                        return grammar_error_in_token(tok,"expected reason after \"jump\" statement (directly, 64equals or 8equals)");
                     }
                     tok = tok->next;
                     if(strcmp(tok->token,"directly")==0)
@@ -604,14 +604,24 @@ int main(int argc,char** argv)
                         add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP,sizeof(uint8_t),NULL,0, tok);
                         add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
                     }
-                    else if(strcmp(tok->token,"equals")==0)
+                    else if(strcmp(tok->token,"64equals")==0)
                     {
                         if(tok->next==NULL)
                         {
-                            return grammar_error_in_token(tok,"expected variable name after \"jump equals\" statement");
+                            return grammar_error_in_token(tok,"expected variable name after \"jump 64equals\" statement");
                         }
                         tok = tok->next;
-                        add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP_EQUALS,sizeof(uint8_t),NULL,0, tok);
+                        add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP_EQUALS_64,sizeof(uint8_t),NULL,0, tok);
+                        add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                    }
+                    else if(strcmp(tok->token,"8equals")==0)
+                    {
+                        if(tok->next==NULL)
+                        {
+                            return grammar_error_in_token(tok,"expected variable name after \"jump 8equals\" statement");
+                        }
+                        tok = tok->next;
+                        add_compiled_tree_value(STAPEL_INSTRUCTION_JUMP_EQUALS_8,sizeof(uint8_t),NULL,0, tok);
                         add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
                     }
                     else

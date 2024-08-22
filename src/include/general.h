@@ -37,7 +37,7 @@ typedef struct {
 #define STAPEL_INSTRUCTION_CALL                     0x08
 #define STAPEL_INSTRUCTION_JUMP                     0x09
 #define STAPEL_INSTRUCTION_INT                      0x0A
-#define STAPEL_INSTRUCTION_JUMP_EQUALS              0x0B
+#define STAPEL_INSTRUCTION_JUMP_EQUALS_64           0x0B
 #define STAPEL_INSTRUCTION_JUMP_MORE                0x0C
 #define STAPEL_INSTRUCTION_JUMP_LESS                0x0D
 #define STAPEL_INSTRUCTION_RET                      0x0E
@@ -53,5 +53,6 @@ typedef struct {
 #define STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE_16    0x18
 #define STAPEL_INSTRUCTION_POP_16                   0x19
 #define STAPEL_INSTRUCTION_POP_AT_16                0x1A
+#define STAPEL_INSTRUCTION_JUMP_EQUALS_8            0x1B
 
 #define STAPEL_SYSCALL_VERSION                      1

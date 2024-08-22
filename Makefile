@@ -14,11 +14,11 @@ build_compiler_unix:
 	gcc compiler/main.c -o ./bin/unix/stapelc -D PROGRAM
 
 build_std_wasm:
-	emcc src/main.c -o ./bin/wasm/stapel.js -D WASM -s EXPORTED_FUNCTIONS="['_setKbbuf','_handle_default_next_instruction']"
+	emcc src/main.c -o ./bin/wasm/stapel.js -D WASM -s EXPORTED_FUNCTIONS="['_setKbbuf','_main','_handle_default_next_instruction']"
 
 build_compiler_wasm:
 	emcc compiler/main.c -o ./bin/wasm/stapelc.js -D WASM
 
 build_std_wasm_debug:
-	emcc src/main.c -o ./bin/wasm/debug/stapel.js -D DEBUG -D WASM -s EXPORTED_FUNCTIONS="['_setKbbuf','_handle_default_next_instruction']"
+	emcc src/main.c -o ./bin/wasm/debug/stapel.js -D DEBUG -D WASM -s EXPORTED_FUNCTIONS="['_setKbbuf','_main','_handle_default_next_instruction']"
 

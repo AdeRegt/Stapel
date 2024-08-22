@@ -284,7 +284,7 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
             stack_push_uint64(cv,(uint64_t)res);
         #endif 
     }
-    else if(instruction==STAPEL_INSTRUCTION_JUMP_EQUALS)
+    else if(instruction==STAPEL_INSTRUCTION_JUMP_EQUALS_64)
     {
         add_instruction_pointer_uint8(cv);
         uint64_t value_at_address =  grab_next_instruction_uint64(cv);
@@ -490,6 +490,21 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         #endif
         uint16_t uval = stack_pop_uint16(cv);
         ((uint16_t*)( value_at_address ))[0] = uval;
+    }
+    else if(instruction==STAPEL_INSTRUCTION_JUMP_EQUALS_8)
+    {
+        add_instruction_pointer_uint8(cv);
+        uint64_t value_at_address =  grab_next_instruction_uint64(cv);
+        add_instruction_pointer_uint64(cv);
+        uint8_t valA = stack_pop_uint8(cv);
+        uint8_t valB = stack_pop_uint8(cv);
+        #ifdef DEBUG
+            printf("DEBUG: conditional jump A(0x%x)==B(0x%x) if true, jump to 0x" PRINTLONG "  \n",valA,valB,value_at_address);
+        #endif
+        if(valA==valB)
+        {
+            cv->instruction_pointer = ( value_at_address + (uint64_t)cv->central_memory );
+        }
     }
     #endif 
     else
