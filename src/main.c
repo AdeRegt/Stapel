@@ -167,11 +167,11 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
     else if(instruction==STAPEL_INSTRUCTION_PUSH_ADDRESS_VALUE_64)
     {
         add_instruction_pointer_uint8(cv);
-        uint64_t address_to_get = grab_next_instruction_uint64(cv);
-        uint64_t value_at_address = ((uint64_t*)( address_to_get + cv->central_memory ))[0];
+        uint64_t address_to_get = grab_next_instruction_uint64(cv) + (uint64_t)cv->central_memory;
+        uint64_t value_at_address = ((uint64_t*)( address_to_get ))[0];
         add_instruction_pointer_uint64(cv);
         #ifdef DEBUG
-            printf("DEBUG: reading 64b value of 0x" PRINTLONG " at 0x" PRINTLONG " \n",value_at_address,address_to_get);
+            printf("DEBUG: pushing a 64bit value of 0x" PRINTLONG " from 0x" PRINTLONG " to the stack \n",value_at_address,address_to_get);
         #endif
         stack_push_uint64(cv,value_at_address);
     }
@@ -181,7 +181,7 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint64_t value_at_address = grab_next_instruction_uint64(cv);
         add_instruction_pointer_uint64(cv);
         #ifdef DEBUG
-            printf("DEBUG: reading 64b value of 0x" PRINTLONG " \n",value_at_address);
+            printf("DEBUG: pushing a 64bit value of 0x" PRINTLONG " to the stack\n",value_at_address);
         #endif
         stack_push_uint64(cv,value_at_address);
     }
@@ -219,13 +219,19 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint64_t valA = stack_pop_uint64(cv);
         uint64_t valB = stack_pop_uint64(cv);
         stack_push_uint64(cv,valA+valB);
+        #ifdef DEBUG
+            printf("DEBUG: adding 0x" PRINTLONG " to 0x" PRINTLONG " which makes 0x" PRINTLONG " and puts it on the stack \n",valA,valB,valA+valB);
+        #endif
         add_instruction_pointer_uint8(cv);
     }
     else if(instruction==STAPEL_INSTRUCTION_SUB)
     {
         uint64_t valA = stack_pop_uint64(cv);
         uint64_t valB = stack_pop_uint64(cv);
-        stack_push_uint64(cv,valA+valB);
+        stack_push_uint64(cv,valA-valB);
+        #ifdef DEBUG
+            printf("DEBUG: substracting 0x" PRINTLONG " to 0x" PRINTLONG " which makes 0x" PRINTLONG " and puts it on the stack \n",valA,valB,valA-valB);
+        #endif
         add_instruction_pointer_uint8(cv);
     }
     else if(instruction==STAPEL_INSTRUCTION_MUL)
@@ -233,6 +239,9 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint64_t valA = stack_pop_uint64(cv);
         uint64_t valB = stack_pop_uint64(cv);
         stack_push_uint64(cv,valA*valB);
+        #ifdef DEBUG
+            printf("DEBUG: multiplying 0x" PRINTLONG " to 0x" PRINTLONG " which makes 0x" PRINTLONG " and puts it on the stack \n",valA,valB,valA*valB);
+        #endif
         add_instruction_pointer_uint8(cv);
     }
     else if(instruction==STAPEL_INSTRUCTION_DIV)
@@ -240,6 +249,9 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint64_t valA = stack_pop_uint64(cv);
         uint64_t valB = stack_pop_uint64(cv);
         stack_push_uint64(cv,valA/valB);
+        #ifdef DEBUG
+            printf("DEBUG: dividing 0x" PRINTLONG " to 0x" PRINTLONG " which makes 0x" PRINTLONG " and puts it on the stack \n",valA,valB,valA/valB);
+        #endif
         add_instruction_pointer_uint8(cv);
     }
     else if(instruction==STAPEL_INSTRUCTION_CALL)
@@ -351,12 +363,12 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
     else if(instruction==STAPEL_INSTRUCTION_PUSH_RAW_ADDR)
     {
         add_instruction_pointer_uint8(cv);
-        uint64_t value_at_address =  grab_next_instruction_uint64(cv);
+        uint64_t value_at_address =  grab_next_instruction_uint64(cv) + (uint64_t)cv->central_memory;
         add_instruction_pointer_uint64(cv);
         #ifdef DEBUG
-            printf("DEBUG: reading 64b value of 0x" PRINTLONG " \n",value_at_address);
+            printf("DEBUG: pushing a 64bit value of 0x" PRINTLONG " to the stack \n",value_at_address);
         #endif
-        stack_push_uint64(cv,value_at_address + (uint64_t)cv->central_memory);
+        stack_push_uint64(cv,value_at_address);
     }
     #if STAPEL_HEADER_VERSION > 1
     else if(sth->version>1 && instruction==STAPEL_INSTRUCTION_SYSCALL)
@@ -397,7 +409,7 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint8_t value_at_address = grab_next_instruction_uint8(cv);
         add_instruction_pointer_uint8(cv);
         #ifdef DEBUG
-            printf("DEBUG: reading 8b value of 0x%x \n",value_at_address);
+            printf("DEBUG: reading 8bit value of 0x%x \n",value_at_address);
         #endif
         stack_push_uint8(cv,value_at_address);
     }
@@ -408,7 +420,7 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint8_t value_at_address = ((uint8_t*)( address_to_get + cv->central_memory ))[0];
         add_instruction_pointer_uint64(cv);
         #ifdef DEBUG
-            printf("DEBUG: reading 8b value of 0x%x at 0x" PRINTLONG " \n",value_at_address,address_to_get);
+            printf("DEBUG: reading 8bit value of 0x%x at 0x" PRINTLONG " \n",value_at_address,address_to_get);
         #endif
         stack_push_uint8(cv,value_at_address);
     }
@@ -441,10 +453,10 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint64_t address_to_get = grab_next_instruction_uint64(cv);
         add_instruction_pointer_uint64(cv);
         uint64_t value_at_address = ((uint64_t*)( address_to_get + cv->central_memory ))[0];
-        #ifdef DEBUG
-            printf("DEBUG: reading 8b value of 0x" PRINTLONG " at 0x" PRINTLONG " \n",value_at_address,address_to_get);
-        #endif
         uint8_t uval = stack_pop_uint8(cv);
+        #ifdef DEBUG
+            printf("DEBUG: popping 8bit value of %x to 0x" PRINTLONG " as defined at 0x" PRINTLONG " \n",uval,value_at_address,address_to_get);
+        #endif
         ((uint8_t*)( value_at_address ))[0] = uval;
     }
     else if(sth->version>1 && instruction==STAPEL_INSTRUCTION_PUSH_VALUE_16)
@@ -485,13 +497,13 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint64_t address_to_get = grab_next_instruction_uint64(cv);
         add_instruction_pointer_uint64(cv);
         uint64_t value_at_address = ((uint64_t*)( address_to_get + cv->central_memory ))[0];
-        #ifdef DEBUG
-            printf("DEBUG: reading 8b value of 0x" PRINTLONG " at 0x" PRINTLONG " \n",value_at_address,address_to_get);
-        #endif
         uint16_t uval = stack_pop_uint16(cv);
+        #ifdef DEBUG
+            printf("DEBUG: popping 16bit value of 0x%x at address 0x" PRINTLONG " which was defined at 0x" PRINTLONG " \n",uval,value_at_address,address_to_get);
+        #endif
         ((uint16_t*)( value_at_address ))[0] = uval;
     }
-    else if(instruction==STAPEL_INSTRUCTION_JUMP_EQUALS_8)
+    else if(sth->version>1 && instruction==STAPEL_INSTRUCTION_JUMP_EQUALS_8)
     {
         add_instruction_pointer_uint8(cv);
         uint64_t value_at_address =  grab_next_instruction_uint64(cv);
@@ -499,12 +511,43 @@ int handle_next_instruction(StapelMultitaskingInstance* cv)
         uint8_t valA = stack_pop_uint8(cv);
         uint8_t valB = stack_pop_uint8(cv);
         #ifdef DEBUG
-            printf("DEBUG: conditional jump A(0x%x)==B(0x%x) if true, jump to 0x" PRINTLONG "  \n",valA,valB,value_at_address);
+            printf("DEBUG: conditional jump 8bit A(0x%x)==B(0x%x) if true, jump to 0x" PRINTLONG "  \n",valA,valB,value_at_address);
         #endif
         if(valA==valB)
         {
             cv->instruction_pointer = ( value_at_address + (uint64_t)cv->central_memory );
         }
+    }
+    else if(sth->version>1 && instruction==STAPEL_INSTRUCTION_POP_ADDRESS)
+    {
+        add_instruction_pointer_uint8(cv);
+        uint64_t value_at_address =  grab_next_instruction_uint64(cv) + (uint64_t) cv->central_memory;
+        add_instruction_pointer_uint64(cv);
+        uint64_t val = stack_pop_uint64(cv) + (uint64_t) cv->central_memory;
+        #ifdef DEBUG
+            printf("DEBUG: popping the address value of 0x" PRINTLONG " from the stack and put it at 0x" PRINTLONG " \n",val,value_at_address);
+        #endif
+        ((uint64_t*)value_at_address)[0] = val;
+    }
+    else if(sth->version>1 && instruction==STAPEL_INSTRUCTION_PUSH_FETCH_64)
+    {
+        add_instruction_pointer_uint8(cv);
+        uint64_t address_to_read_from = stack_pop_uint64(cv);
+        uint64_t value_at_address = ((uint64_t*)address_to_read_from)[0];
+        #ifdef DEBUG
+            printf("DEBUG: pushing 64bit value 0x" PRINTLONG " read from 0x" PRINTLONG " \n",value_at_address,address_to_read_from);
+        #endif
+        stack_push_uint64(cv,value_at_address);
+    }
+    else if(sth->version>1 && instruction==STAPEL_INSTRUCTION_PUSH_FETCH_8)
+    {
+        add_instruction_pointer_uint8(cv);
+        uint64_t address_to_read_from = stack_pop_uint64(cv);
+        uint8_t value_at_address = ((uint8_t*)address_to_read_from)[0];
+        #ifdef DEBUG
+            printf("DEBUG: pushing 8bit value 0x%x read from 0x" PRINTLONG " \n",value_at_address,address_to_read_from);
+        #endif
+        stack_push_uint8(cv,value_at_address);
     }
     #endif 
     else

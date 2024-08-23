@@ -54,5 +54,8 @@ typedef struct {
 #define STAPEL_INSTRUCTION_POP_16                   0x19
 #define STAPEL_INSTRUCTION_POP_AT_16                0x1A
 #define STAPEL_INSTRUCTION_JUMP_EQUALS_8            0x1B
+#define STAPEL_INSTRUCTION_POP_ADDRESS              0x1C
+#define STAPEL_INSTRUCTION_PUSH_FETCH_64            0x1D
+#define STAPEL_INSTRUCTION_PUSH_FETCH_8             0x1E
 
 #define STAPEL_SYSCALL_VERSION                      1

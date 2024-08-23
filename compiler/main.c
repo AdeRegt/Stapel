@@ -133,6 +133,16 @@ void fixstring(char* str)
     }
 }
 
+char string_is_numeric(char* base){
+    for(int i = 0 ; i < strlen(base) ; i++){
+        char deze = base[i];
+        if(!(deze>='0'&&deze<='9')){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int main(int argc,char** argv)
 {
 
@@ -452,7 +462,7 @@ int main(int argc,char** argv)
                 if(tok->next==NULL)
                 {
                     #if STAPEL_HEADER_VERSION > 1
-                        return grammar_error_in_token(tok,"\"address\",\"64value_at\",\"64value\",\"8value_at\",\"8value\",\"16value_at\" or \"16value\" expected after push statement");
+                        return grammar_error_in_token(tok,"\"64fetch\",\"8fetch\",\"address\",\"64value_at\",\"64value\",\"8value_at\",\"8value\",\"16value_at\" or \"16value\" expected after push statement");
                     #else 
                         return grammar_error_in_token(tok,"\"address\",\"value_at\" or \"value\" expected after push statement");
                     #endif 
@@ -487,7 +497,11 @@ int main(int argc,char** argv)
                     }
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE_64,sizeof(uint8_t),NULL,0, tok);
-                    add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0, tok);
+                    if(string_is_numeric(tok->token)){
+                        add_compiled_tree_value(atoi(tok->token),sizeof(uint64_t),NULL,0, tok);
+                    }else{
+                        add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                    }
                 }
                 else if(strcmp(tok->token,"8value_at")==0)
                 {
@@ -528,6 +542,14 @@ int main(int argc,char** argv)
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_VALUE_16,sizeof(uint8_t),NULL,0, tok);
                     add_compiled_tree_value(atoi(tok->token),sizeof(uint16_t),NULL,0, tok);
+                }
+                else if(strcmp(tok->token,"64fetch")==0)
+                {
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_FETCH_64,sizeof(uint8_t),NULL,0, tok);
+                }
+                else if(strcmp(tok->token,"8fetch")==0)
+                {
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_PUSH_FETCH_8,sizeof(uint8_t),NULL,0, tok);
                 }
                 #else 
                 else if(strcmp(tok->token,"value_at")==0)
@@ -651,7 +673,7 @@ int main(int argc,char** argv)
                 #if STAPEL_HEADER_VERSION > 1
                 if(tok->next==NULL)
                 {
-                    return grammar_error_in_token(tok,"expected  \"64value\",\"8value\",\"64value_at\",\"16value\",\"16value_at\" or \"8value_at\" after pop statement");
+                    return grammar_error_in_token(tok,"expected  \"address\",\"64value\",\"8value\",\"64value_at\",\"16value\",\"16value_at\" or \"8value_at\" after pop statement");
                 }
                 tok = tok->next;
                 if(strcmp(tok->token,"64value")==0)
@@ -712,6 +734,16 @@ int main(int argc,char** argv)
                     }
                     tok = tok->next;
                     add_compiled_tree_value(STAPEL_INSTRUCTION_POP_AT_16,sizeof(uint8_t),NULL,0, tok);
+                    add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
+                }
+                else if(strcmp(tok->token,"address")==0)
+                {
+                    if(tok->next==NULL)
+                    {
+                        return grammar_error_in_token(tok,"integer value required after \"push address\" statement");
+                    }
+                    tok = tok->next;
+                    add_compiled_tree_value(STAPEL_INSTRUCTION_POP_ADDRESS,sizeof(uint8_t),NULL,0, tok);
                     add_compiled_tree_value(0,sizeof(uint64_t),tok->token,1, tok);
                 }
                 #else 
